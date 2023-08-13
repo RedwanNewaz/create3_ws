@@ -167,7 +167,7 @@ void JointStateEstimator::sensorFusion()
         return;
     }
 
-    bool isUpdated;
+    bool isUpdated = false;
     switch (sensorType_[estimatorType_]) {
         case APRILTAG: isUpdated = get_state_from_apriltag();break;
         case ODOM: isUpdated = get_state_from_odom(); break;

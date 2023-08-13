@@ -69,7 +69,7 @@ namespace model
                 position_[i] = static_tf[i];
             }
 
-            for (int j = 3; j < static_tf.size(); ++j) {
+            for (int j = 3; j < (int)static_tf.size(); ++j) {
                 orientation_[j] = static_tf[j];
             }
         }

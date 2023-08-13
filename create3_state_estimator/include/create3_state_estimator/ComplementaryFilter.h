@@ -33,7 +33,7 @@ namespace model
                     init(obs);
                     init_ = true;
                 }
-                for (int i = 0; i < obs.size(); ++i) {
+                for (std::size_t i = 0; i < obs.size(); ++i) {
                     X_[i] = m_alpha * X_[i] + (1 - m_alpha) * obs[i];
                 }
                 if(result.empty())
