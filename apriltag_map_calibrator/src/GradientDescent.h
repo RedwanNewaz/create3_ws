@@ -22,11 +22,23 @@ namespace airlab{
 
     void GradientDescent::computeGradient()
     {
-        auto M_T_C1tag = _cam1->getPose();
-        auto M_T_C2tag = _cam2->getPose();
-        // by definition both should be pointing the map location 
-        auto C1_pos_err = _mapTF.getOrigin() - M_T_C1tag.getOrigin(); 
-        auto C1_ori_err = _mapTF.getRotation() - M_T_C1tag.getRotation(); 
+        auto cam1_T_tag = _cam1->getPose();
+        auto cam2_T_tag = _cam2->getPose();
+        
+
+        // estimate tag_T_cam1 with respect to cam2 
+        auto tag_T_cam2 = cam2_T_tag.inverse();
+        auto cam1_T_cam2 = cam1_T_tag * tag_T_cam2;
+        
+        // estimate tag_T_cam2 with respect to cam1 
+        auto tag_T_cam1 = cam1_T_tag.inverse();
+        auto cam2_T_cam1 = cam2_T_tag * tag_T_cam1;
+        
+        
+        auto tag_T_cam1_ =  tag_T_cam2 * cam2_T_cam1;
+        auto tag_T_cam2_ =  tag_T_cam1 * cam1_T_cam2;
+        
+
     }
 
 }

@@ -11,6 +11,7 @@ namespace airlab{
         ComplementaryFilter(double alpha);
         void update(const std::array<double, POSE_DIM>& pose);
         POSE_ARRAY getState() const; 
+        uint32_t getCount() const; 
         
 
 
@@ -47,5 +48,10 @@ namespace airlab{
     POSE_ARRAY ComplementaryFilter::getState() const
     {
         return _state; 
+    } 
+
+    uint32_t ComplementaryFilter::getCount() const
+    {
+        return _count; 
     } 
 }

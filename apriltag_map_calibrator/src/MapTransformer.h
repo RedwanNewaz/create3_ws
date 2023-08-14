@@ -80,6 +80,8 @@ namespace airlab
         tf2::Transform pose; 
         pose.setOrigin(origin); 
         pose.setRotation(q); 
+        RCLCPP_INFO(this->get_logger(), "[Pose %d]: t: (%lf, %lf, %lf), r: (%lf, %lf, %lf, %lf)", 
+                    _filter->getCount(), state[0], state[1], state[2], state[3], state[4], state[5], state[6]);
         return pose;   
     }
     
