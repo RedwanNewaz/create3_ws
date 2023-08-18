@@ -38,7 +38,10 @@ namespace airlab
     // viz data 
     create3_state_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("/apriltag/viz", 10);
     pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseArray>("/apriltag/pose_detections", 10);
-    timer_ = this->create_wall_timer(1s, [this] { publish_traj(); });
+    timer_ = this->create_wall_timer(1s, [this] { 
+        if(!_calibration)
+          publish_traj(); 
+      });
                     
   }
 
@@ -78,13 +81,25 @@ namespace airlab
 
     for(auto &pose: results)
     {
-      // RCLCPP_INFO_STREAM(get_logger(), pose.first.transpose());
-      auto globalCoord = getMapCoord(pose, camIndex); 
-      //printTransformation(globalCoord);
-      state_callback(globalCoord, DEFAULT, pose.id);
-
+      
       geometry_msgs::msg::Pose poseMsg; 
-      tf2::toMsg(globalCoord, poseMsg);
+      
+      if(!_calibration)
+      {
+        // RCLCPP_INFO_STREAM(get_logger(), pose.first.transpose());
+        auto globalCoord = getMapCoord(pose, camIndex); 
+        //printTransformation(globalCoord);
+        state_callback(globalCoord, DEFAULT, pose.id);
+
+        tf2::toMsg(globalCoord, poseMsg);
+      }
+      else
+      {
+        //local coordintes are needed when cameras should be calibrated
+        auto localCoord = convertTFfromPose(pose);
+        tf2::toMsg(localCoord, poseMsg);
+      }
+
       poses.poses.push_back(poseMsg);
 
       if(--N > 0)

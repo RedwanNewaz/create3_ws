@@ -69,6 +69,8 @@ namespace airlab{
         }
 
         readApriltagParams();
+
+        _calibration = _node_conf["calibration"].as<bool>();
       }
 
       
@@ -84,7 +86,8 @@ namespace airlab{
         double _quad_decimate;
         double _quad_sigma; 
         int _nthreads; 
-        bool _refine_edges;    
+        bool _refine_edges;
+        bool _calibration;     
 
     protected:
         virtual void detect(cv::Mat& img_uint8, int camIndex, std::vector<Pose>& results) = 0;
@@ -93,25 +96,7 @@ namespace airlab{
         {
             return getMapCoord(convertTFfromPose(pose), _mapTfs[camIndex]);
         }
-
-
-
-    private:    
-
-        void readApriltagParams()
-        {
-            _quad_decimate = _node_conf["quad_decimate"].as<double>();
-            _quad_sigma = _node_conf["quad_sigma"].as<double>();
-            _nthreads = _node_conf["nthreads"].as<int>();
-            _refine_edges = _node_conf["refine_edges"].as<int>();
-
-        }    
         
-        Mat3 getPINV(const std::vector<double>&data) const 
-        {
-            return Eigen::Map<const Eigen::Matrix<double, 3, 4, Eigen::RowMajor>>(data.data()).leftCols<3>().inverse();
-        }
-
         tf2::Transform convertTFfromPose(const Pose& pose)
         {
             auto p = pose.translation; 
@@ -126,6 +111,25 @@ namespace airlab{
 
             return transform; 
         }
+
+
+    private:    
+
+        void readApriltagParams()
+        {
+            _quad_decimate = _node_conf["quad_decimate"].as<double>();
+            _quad_sigma = _node_conf["quad_sigma"].as<double>();
+            _nthreads = _node_conf["nthreads"].as<int>();
+            _refine_edges = _node_conf["refine_edges"].as<bool>();
+
+        }    
+        
+        Mat3 getPINV(const std::vector<double>&data) const 
+        {
+            return Eigen::Map<const Eigen::Matrix<double, 3, 4, Eigen::RowMajor>>(data.data()).leftCols<3>().inverse();
+        }
+
+     
 
         tf2::Transform convertTFfromVector(const std::vector<double>& pose)
         {
