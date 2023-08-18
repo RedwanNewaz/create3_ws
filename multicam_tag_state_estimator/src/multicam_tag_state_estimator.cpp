@@ -94,6 +94,8 @@ namespace airlab
       
     }
 
+    poses.header.frame_id += "," + _frames[camIndex];
+
     // only publish if a tag is detected
     if(poses.poses.size() > 0)
       pose_pub_->publish(poses);
