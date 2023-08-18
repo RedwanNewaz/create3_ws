@@ -13,4 +13,10 @@ transformation:
   nexigo_cam:
     map: [0.092, 1.610, 2.637, 0.695, 0.714, 0.003, 0.078]
     logitec: [-0.314, 4.472, -0.531, 0.013, -0.164, 0.985, -0.051]
+
+# apriltag related params
 tag_size: 0.2
+nthreads: 16
+quad_decimate: 0.50
+quad_sigma: 0.05
+refine_edges: 1

@@ -20,7 +20,9 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(cv_bridge REQUIRED)
 
-add_executable(multicam_tag_state_estimator src/multicam_tag_state_estimator.cpp)
+add_library(multicam_tag_state_estimator SHARED
+  src/apriltag_detector.cpp
+  src/multicam_tag_state_estimator.cpp)
 target_include_directories(multicam_tag_state_estimator PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
@@ -46,8 +48,18 @@ include_directories(${OpenCV_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} apriltag ${OpenCV_LIBRARIES} Eigen3::Eigen yaml-cpp::yaml-cpp) 
 
 
-install(TARGETS multicam_tag_state_estimator
-  DESTINATION lib/${PROJECT_NAME})
+# install(TARGETS multicam_tag_state_estimator
+#   DESTINATION lib/${PROJECT_NAME})
+
+rclcpp_components_register_node(multicam_tag_state_estimator PLUGIN "airlab::multicam_tag_state_estimator" EXECUTABLE multicam_tag_state_estimator_node)
+install(TARGETS 
+  multicam_tag_state_estimator
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+  )
+
+
 
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})

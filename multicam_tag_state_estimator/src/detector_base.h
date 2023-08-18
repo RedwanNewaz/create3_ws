@@ -26,17 +26,22 @@ namespace airlab{
 
     public:
       using Mat3 = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>;
-      using Pose = std::pair<Eigen::Vector3d, Eigen::Quaterniond>;
+      struct Pose {Eigen::Vector3d translation; Eigen::Quaterniond rotation; int id;};
       struct TagConfig{Mat3 PINV; double TAG_SIZE;};
       DetectorBase()
       {
+        // init("airlab_cams.yaml");
+        
+      }
 
+      void init(const std::string& param_file)
+      {
         std::string package_name = "multicam_tag_state_estimator";
         std::string package_path = ament_index_cpp::get_package_share_directory(package_name);
         
-        auto config_path = package_path + "/config/" + "airlab_cams.yaml";
+        auto config_path = package_path + "/config/" + param_file;
         
-        cout << config_path << endl; 
+        // cout << config_path << endl; 
 
         _node_conf = YAML::LoadFile(config_path);
         for (auto& cam_info: _node_conf["camera_configs"].as<std::vector<std::string>>())
@@ -45,6 +50,9 @@ namespace airlab{
           auto config_info = package_path + "/config/" + cam_info;
           YAML::Node cam_conf = YAML::LoadFile(config_info);
           _camConfs.emplace_back(cam_conf);
+
+          // get camera name 
+          _frames.emplace_back(cam_conf["camera_name"].as<std::string>());
         
           // track camera projection matrix to calculate realworld coordinate 
           auto projection = cam_conf["projection_matrix"]["data"].as<std::vector<double>>();  
@@ -60,6 +68,7 @@ namespace airlab{
             _mapTfs.emplace_back(convertTFfromVector(tfValues["map"]));
         }
 
+        readApriltagParams();
       }
 
       
@@ -67,11 +76,18 @@ namespace airlab{
     protected:      
         std::vector<YAML::Node> _camConfs;
         std::vector<tf2::Transform> _mapTfs;
-        std::vector<TagConfig> _configs; 
-        YAML::Node _node_conf;       
+        std::vector<TagConfig> _configs;
+        std::vector<std::string> _frames; 
+        YAML::Node _node_conf; 
 
     protected:
-        virtual void detect(const cv::Mat& img_uint8, int camIndex, std::vector<Pose>& results) = 0;
+        double _quad_decimate;
+        double _quad_sigma; 
+        int _nthreads; 
+        bool _refine_edges;    
+
+    protected:
+        virtual void detect(cv::Mat& img_uint8, int camIndex, std::vector<Pose>& results) = 0;
 
         tf2::Transform getMapCoord(const Pose& pose, int camIndex)
         {
@@ -80,7 +96,16 @@ namespace airlab{
 
 
 
-    private:        
+    private:    
+
+        void readApriltagParams()
+        {
+            _quad_decimate = _node_conf["quad_decimate"].as<double>();
+            _quad_sigma = _node_conf["quad_sigma"].as<double>();
+            _nthreads = _node_conf["nthreads"].as<int>();
+            _refine_edges = _node_conf["refine_edges"].as<int>();
+
+        }    
         
         Mat3 getPINV(const std::vector<double>&data) const 
         {
@@ -89,8 +114,8 @@ namespace airlab{
 
         tf2::Transform convertTFfromPose(const Pose& pose)
         {
-            auto p = pose.first; 
-            auto q = pose.second; 
+            auto p = pose.translation; 
+            auto q = pose.rotation; 
             tf2::Transform transform; 
 
             tf2::Vector3 origin(p(0), p(1), p(2));
@@ -122,6 +147,15 @@ namespace airlab{
             // C_T_M : camera to map transformation
             // need to find M_T_R transformation 
             tf2::Transform M_T_R = C_T_M.inverseTimes(pose);
+            
+            // fix yaw angle 
+            auto q = M_T_R.getRotation(); 
+            tf2::Matrix3x3 m(q); 
+            double roll, pitch, yaw; 
+            m.getRPY(roll, pitch, yaw); 
+            q.setRPY(0, 0, yaw + M_PI);
+            M_T_R.setRotation(q);
+
             return M_T_R; 
         }  
      
