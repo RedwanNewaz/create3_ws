@@ -52,7 +52,7 @@ namespace airlab{
     rviz_loop_ = this->create_wall_timer(std::chrono::milliseconds(250), [this] { 
       if(initialized_)
       {
-        if(ltraj_.size() > 0)
+    
           publish_short_horizon_traj(ltraj_);
         state_callback(robot_pose_);
       }
