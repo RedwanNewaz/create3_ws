@@ -62,7 +62,7 @@ class param_manager2: public std::enable_shared_from_this<param_manager2>{
 public:
     param_manager2(const std::string& file)
     {
-        DEBUG("loading " << file);
+        // DEBUG("loading " << file);
         config_ = YAML::LoadFile(file);
     }
 
@@ -72,7 +72,7 @@ public:
     T get_param(const std::string& field)
     {
         T value = config_[field].template as<T>();
-        DEBUG(field << " = " << value);
+        // DEBUG(field << " = " << value);
         return value;
     }
 

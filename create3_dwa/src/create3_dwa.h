@@ -23,7 +23,7 @@ namespace airlab{
     void execute();
     void publish_short_horizon_traj(Traj &traj);
     void obstacles_callback(const std::string& ns, const std::vector<geometry_msgs::msg::Point>& obstacles);
-  
+    void state_callback(const tf2::Transform& tf);
   private:
     bool initialized_; 
     DynamicWindow::Config config_;

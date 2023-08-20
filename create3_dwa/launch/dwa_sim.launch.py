@@ -46,7 +46,13 @@ def generate_launch_description():
 
     container1 = getNode('ac31', 7, [2.0, 2.0])
     container2 = getNode('ac32', 32, [-2.0, -2.0])
+    
+    container3 = getNode('ac33', 33, [2.0, -2.0])
+    container4 = getNode('ac34', 34, [-2.0, 2.0])
+
     ld.add_action(container1)
     ld.add_action(container2)
+    ld.add_action(container3)
+    ld.add_action(container4)
 
     return ld

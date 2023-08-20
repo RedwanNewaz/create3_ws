@@ -32,8 +32,12 @@ namespace airlab{
       if(ns == self)
         return; 
       // RCLCPP_INFO(get_logger(), "self = %s , other = %s", self.c_str(), ns.c_str());     
-      
-      obstacles_callback(ns, msg->points);
+      // if(!msg->points.empty())
+      auto name = ns + std::to_string(msg->id);
+      auto pose_var = ns + "pose";
+      obstacleMap_[pose_var].clear();
+      obstacleMap_[pose_var].push_back(msg->pose.position);
+      obstacles_callback(name, msg->points);
 
     });
 
@@ -102,10 +106,15 @@ namespace airlab{
     alpha = alpha  - current_angle  + M_PI;
     alpha = fmod(alpha, 2 * M_PI) - M_PI;
 
-    if (alpha > M_PI_2 || alpha < - M_PI_2)
+    if (alpha > M_PI_2)
     {
         control_[0] *= 0;
-        control_[1] = -0.2;
+        control_[1] = 0.5;
+    }
+    else if (alpha < - M_PI_2)
+    {
+      control_[0] *= 0;
+      control_[1] = -0.5;
     }
 
     // publish command 
@@ -143,6 +152,7 @@ namespace airlab{
     msg.points.emplace_back(goal.position);
 
     traj_pub_->publish(msg);
+    state_callback(robot_pose_);
   }
 
   void create3_dwa::obstacles_callback(const std::string& ns, const std::vector<geometry_msgs::msg::Point>& points)
@@ -169,6 +179,37 @@ namespace airlab{
     }
 
   }
+
+  void create3_dwa::state_callback(const tf2::Transform& tf)
+  {
+      // convert Transform to viz marker
+      visualization_msgs::msg::Marker marker;
+      marker.action = visualization_msgs::msg::Marker::ADD;
+      marker.header.stamp  = get_clock()->now();
+      marker.header.frame_id  = "map";
+      marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
+      marker.mesh_resource = "package://irobot_create_description/meshes/body_visual.dae";
+      marker.id = tag_id_;
+      marker.ns = get_namespace();
+      marker.scale.x = marker.scale.y = marker.scale.z = 1.0; // arrow scale 0.2 roomba scale 1.0
+      marker.color.r = marker.color.g  = marker.color.b = 0.66;
+      marker.color.a = 0.85;
+
+      auto origin = tf.getOrigin(); 
+      auto q = tf.getRotation(); 
+
+      tf2::Matrix3x3 m(q);
+      double roll, pitch, yaw; 
+      m.getRPY(roll, pitch, yaw); 
+      q.setRPY(0, 0, yaw + M_PI_2); 
+      
+      tf2::Transform newState; 
+      newState.setOrigin(origin); 
+      newState.setRotation(q);
+
+      tf2::toMsg(newState, marker.pose);
+      traj_pub_->publish(marker);
+  } 
 
 }
 
