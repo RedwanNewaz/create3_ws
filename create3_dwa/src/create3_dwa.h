@@ -38,9 +38,11 @@ namespace airlab{
     rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr obs_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr rviz_sub_;
     rclcpp::TimerBase::SharedPtr control_loop_;
+    rclcpp::TimerBase::SharedPtr rviz_loop_;
     
     mutable std::mutex mu_; 
     int tag_id_;
+    Traj ltraj_;
 
     tf2::Transform robot_pose_;
     tf2::Transform goal_pose_;

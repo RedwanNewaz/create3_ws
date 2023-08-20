@@ -48,6 +48,15 @@ namespace airlab{
       if(initialized_)
         execute();
     });
+
+    rviz_loop_ = this->create_wall_timer(std::chrono::milliseconds(250), [this] { 
+      if(initialized_)
+      {
+        if(ltraj_.size() > 0)
+          publish_short_horizon_traj(ltraj_);
+        state_callback(robot_pose_);
+      }
+    });
     // TODO get parameter 
     std::string package_name = "create3_dwa";
     std::string package_path = ament_index_cpp::get_package_share_directory(package_name);
@@ -99,8 +108,8 @@ namespace airlab{
     {
         // compute local trajectory using dynamic window
         State x({{curr_position.x(), curr_position.y(), current_angle, control_[0], control_[1]}});
-        Traj ltraj = dwa_.compute_control(x, control_, config_, goal, obstacles_);
-        publish_short_horizon_traj(ltraj);
+        ltraj_ = dwa_.compute_control(x, control_, config_, goal, obstacles_);
+        //publish_short_horizon_traj(ltraj_);
     }
 
     alpha = alpha  - current_angle  + M_PI;
@@ -152,7 +161,7 @@ namespace airlab{
     msg.points.emplace_back(goal.position);
 
     traj_pub_->publish(msg);
-    state_callback(robot_pose_);
+    
   }
 
   void create3_dwa::obstacles_callback(const std::string& ns, const std::vector<geometry_msgs::msg::Point>& points)
