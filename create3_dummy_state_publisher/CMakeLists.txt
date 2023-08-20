@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
-project(multicam_tag_state_estimator)
+project(create3_dummy_state_publisher)
 
-set(CXX_STANDARD 17)
-include(cmake/CPM.cmake)
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -11,24 +9,20 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
-find_package(cv_bridge REQUIRED)
 
-add_library(multicam_tag_state_estimator SHARED
-  src/apriltag_detector.cpp
-  src/multicam_tag_state_estimator.cpp)
-target_include_directories(multicam_tag_state_estimator PUBLIC
+add_library(create3_dummy_state_publisher SHARED src/create3_dummy_state_publisher.cpp)
+target_include_directories(create3_dummy_state_publisher PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-target_compile_features(multicam_tag_state_estimator PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(create3_dummy_state_publisher PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 ament_target_dependencies(
-  multicam_tag_state_estimator
+  create3_dummy_state_publisher
   "rclcpp"
   "geometry_msgs"
   "nav_msgs"
@@ -37,36 +31,15 @@ ament_target_dependencies(
   "rcl_interfaces"
   "tf2"
   "tf2_ros"
-  "sensor_msgs"
-  "cv_bridge"
 )
-find_package(OpenCV REQUIRED)
-find_package(apriltag 3.3.0 REQUIRED)
-find_package(yaml-cpp 0.8.0 REQUIRED)
-find_package(Eigen3 REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} apriltag ${OpenCV_LIBRARIES} Eigen3::Eigen yaml-cpp::yaml-cpp) 
 
-
-# install(TARGETS multicam_tag_state_estimator
-#   DESTINATION lib/${PROJECT_NAME})
-
-rclcpp_components_register_node(multicam_tag_state_estimator PLUGIN "airlab::multicam_tag_state_estimator" EXECUTABLE multicam_tag_state_estimator_node)
+rclcpp_components_register_node(${PROJECT_NAME} PLUGIN "airlab::create3_dummy_state_publisher" EXECUTABLE ${PROJECT_NAME}_node)
 install(TARGETS 
-  multicam_tag_state_estimator
+  ${PROJECT_NAME}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
   )
-
-
-
-# install(DIRECTORY launch
-#   DESTINATION share/${PROJECT_NAME})
-
-install(DIRECTORY config
-  DESTINATION share/${PROJECT_NAME})
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -78,5 +51,11 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+
+install(DIRECTORY launch
+DESTINATION share/${PROJECT_NAME})
+
+
 ament_export_dependencies(rosidl_default_runtime)
 ament_package()
