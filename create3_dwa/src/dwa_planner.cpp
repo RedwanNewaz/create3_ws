@@ -3,7 +3,7 @@
 //
 
 #include "dwa_planner.h"
-
+#include "best_first_search.h"
 namespace airlab
 {
 
@@ -96,49 +96,152 @@ namespace airlab
         return minCost;
     }
 
+    // Traj DynamicWindow::planner::calc_final_input(const State &x, Control &u, const Window &dw,
+    //                                               const DynamicWindow::Config &config, const Point &goal,
+    //                                               const std::vector<std::array<double, 2>> &ob) {
+    //     double min_cost = std::numeric_limits<double>::max();
+    //     Control min_u;
+    //     min_u[0] = min_u[1] = 0.0;
+    //     Traj best_traj;
+
+    //     // evalucate all trajectory with sampled input in dynamic window
+    //     for (double v=dw[0]; v<=dw[1]; v+=config.v_reso){
+    //         for (double y=dw[2]; y<=dw[3]; y+=config.yawrate_reso){
+
+    //             Traj raw_traj = calc_trajectory(x, v, y, config);
+    //             //filter points based on the goal
+    //             Traj traj;
+    //             for(auto& p: raw_traj)
+    //             {
+    //                 double dx = goal[0] - p[0];
+    //                 double dy = goal[1] - p[1];
+    //                 auto distance = sqrt(dx * dx + dy * dy);
+    //                 if(distance < config.goal_radius)
+    //                     break;
+    //                 traj.push_back(p);
+    //             }
+
+    //             double to_goal_cost = config.to_goal_cost_gain * calc_to_goal_cost(traj, goal, config);
+    //             double speed_cost = config.speed_cost_gain * (config.max_speed - traj.back()[3]);
+    //             double ob_cost = config.to_obstacle_cost_gain * calc_obstacle_cost(traj, ob, config);
+
+    //             double final_cost =to_goal_cost + speed_cost + ob_cost;
+
+    //             if (min_cost >= final_cost){
+    //                 min_cost = final_cost;
+    //                 min_u = Control{{v, y}};
+    //                 // int N = traj.size() / 2;
+    //                 // min_u = Control{{traj[N][3], traj[N][4]}};
+    //                 best_traj = traj;
+    //             }
+    //         }
+    //     }
+    //     // std::cout <<"[mincost] = " << min_cost << std::endl;
+    //     u = min_u;
+    //     return best_traj;
+    // }
     Traj DynamicWindow::planner::calc_final_input(const State &x, Control &u, const Window &dw,
                                                   const DynamicWindow::Config &config, const Point &goal,
                                                   const std::vector<std::array<double, 2>> &ob) {
-        double min_cost = std::numeric_limits<double>::max();
-        Control min_u;
-        min_u[0] = min_u[1] = 0.0;
-        Traj best_traj;
+        //for (double v=dw[0]; v<=dw[1]; v+=config.v_reso)
+        auto getLocalTraj = [&](double v, double y)
+        {
+            Traj raw_traj = calc_trajectory(x, v, y, config);
+            //filter points based on the goal
+            Traj traj;
+            for(auto& p: raw_traj)
+            {
+                double dx = goal[0] - p[0];
+                double dy = goal[1] - p[1];
+                auto distance = sqrt(dx * dx + dy * dy);
+                if(distance < config.goal_radius)
+                    break;
+                traj.push_back(p);
+            }
+            return traj;
+        };
+        auto getCost = [&](const Traj& traj)
+        {
+            double to_goal_cost = config.to_goal_cost_gain * calc_to_goal_cost(traj, goal, config);
+            double speed_cost = config.speed_cost_gain * (config.max_speed - traj.back()[3]);
+            double ob_cost = config.to_obstacle_cost_gain * calc_obstacle_cost(traj, ob, config);
+            double final_cost =to_goal_cost + speed_cost + ob_cost;
+            return final_cost;
+        };
+        
+        Node state(dw[0], dw[2]);
+        auto traj = getLocalTraj(state.getV(), state.getW());
 
-        // evalucate all trajectory with sampled input in dynamic window
-        for (double v=dw[0]; v<=dw[1]; v+=config.v_reso){
-            for (double y=dw[2]; y<=dw[3]; y+=config.yawrate_reso){
+        priority_queue<shared_ptr<Tree>, vector<shared_ptr<Tree>>, CompareNodeCost> openList;
+        unordered_set<Node, Node::HashFunction> closedList;
+        shared_ptr<Tree> root = make_shared<Tree>(state, nullptr, 0, 0.0);
+        openList.push(root);
+        shared_ptr<Tree> currentNode = nullptr; 
+        while (!openList.empty()) {
+            currentNode = openList.top();
+            openList.pop();
 
-                Traj raw_traj = calc_trajectory(x, v, y, config);
-                //filter points based on the goal
-                Traj traj;
-                for(auto& p: raw_traj)
-                {
-                    double dx = goal[0] - p[0];
-                    double dy = goal[1] - p[1];
-                    auto distance = sqrt(dx * dx + dy * dy);
-                    if(distance < config.goal_radius)
-                        break;
-                    traj.push_back(p);
-                }
+            // is goal state ?
+            if(currentNode->state.getV() >= dw[1])
+            {
+                // cout << "search terminated" << endl; 
+                break;
+            }
 
-                double to_goal_cost = config.to_goal_cost_gain * calc_to_goal_cost(traj, goal, config);
-                double speed_cost = config.speed_cost_gain * (config.max_speed - traj.back()[3]);
-                double ob_cost = config.to_obstacle_cost_gain * calc_obstacle_cost(traj, ob, config);
+                
+            
+            closedList.insert(currentNode->state);
 
-                double final_cost =to_goal_cost + speed_cost + ob_cost;
+            //for (double y=dw[2]; y<=dw[3]; y+=config.yawrate_reso)
+            double evalV = currentNode->state.getV() + config.v_reso;
+            vector<Node> successors = generateSuccessors(evalV, dw[2], dw[3], config.yawrate_reso);
+            for (const Node& successor : successors) {
+                auto succ_traj = getLocalTraj(successor.getV(), successor.getW());
+                double successorCost = getCost(succ_traj); // Assuming a uniform cost for each step
+                double successorHeuristic = 0.0;
 
-                if (min_cost >= final_cost){
-                    min_cost = final_cost;
-                    min_u = Control{{v, y}};
-//                int N = traj.size() / 2;
-//                min_u = Control{{traj[N][3], traj[N][4]}};
-                    best_traj = traj;
+                if (closedList.find(successor) == closedList.end()) {
+                    shared_ptr<Tree> successorNode = make_shared<Tree>(successor, currentNode, successorCost, successorHeuristic);
+                    openList.push(successorNode);
                 }
             }
         }
-//        std::cout <<"[mincost] = " << min_cost << std::endl;
-        u = min_u;
-        return best_traj;
+
+        // currentNode
+        if(currentNode == nullptr)
+        {
+            cout << "NO solution found !!" << endl; 
+        }
+
+        // Traj best_traj;
+        
+        // State step(x);
+        // vector<Control> controls; 
+        // std::function<void(shared_ptr<Tree>)> getNodes = [&](shared_ptr<Tree> root)
+        // {
+        //     if(root == nullptr)
+        //         return; 
+        //     getNodes(root->parent);
+        //     double v = root->state.getV(); 
+        //     double y = root->state.getW();
+
+        //     printf("[size %d] v = %lf, w = %lf \n", controls.size(), v, y);
+        //     Control control{{v, y}};
+        //     step = motion(step, control, config.dt);
+        //     best_traj.emplace_back(step);
+        //     controls.emplace_back(control);
+        // };
+
+        double v = currentNode->state.getV(); 
+        double y = currentNode->state.getW();
+        Control control{{v, y}};
+        u = control;
+        Traj best_traj = calc_trajectory(x, v, y, config);
+        // getNodes(currentNode);
+        
+
+        return best_traj; 
+        
     }
 
     Window DynamicWindow::planner::get_window(double predict_time) {
