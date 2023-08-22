@@ -115,15 +115,10 @@ namespace airlab{
     alpha = alpha  - current_angle  + M_PI;
     alpha = fmod(alpha, 2 * M_PI) - M_PI;
 
-    if (alpha > M_PI_2)
+    if (alpha > M_PI_2 || alpha < - M_PI_2)
     {
         control_[0] *= 0;
         control_[1] = 0.5;
-    }
-    else if (alpha < - M_PI_2)
-    {
-      control_[0] *= 0;
-      control_[1] = -0.5;
     }
 
     // publish command 

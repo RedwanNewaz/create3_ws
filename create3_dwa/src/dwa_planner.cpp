@@ -180,24 +180,17 @@ namespace airlab
         while (!openList.empty()) {
             currentNode = openList.top();
             openList.pop();
-
             // is goal state ?
             if(currentNode->state.getV() >= dw[1])
-            {
-                // cout << "search terminated" << endl; 
                 break;
-            }
-
-                
             
             closedList.insert(currentNode->state);
-
-            //for (double y=dw[2]; y<=dw[3]; y+=config.yawrate_reso)
             double evalV = currentNode->state.getV() + config.v_reso;
             vector<Node> successors = generateSuccessors(evalV, dw[2], dw[3], config.yawrate_reso);
+            
             for (const Node& successor : successors) {
                 auto succ_traj = getLocalTraj(successor.getV(), successor.getW());
-                double successorCost = getCost(succ_traj); // Assuming a uniform cost for each step
+                double successorCost = getCost(succ_traj) - currentNode->cost; // Assuming a uniform cost for each step
                 double successorHeuristic = 0.0;
 
                 if (closedList.find(successor) == closedList.end()) {
@@ -207,39 +200,19 @@ namespace airlab
             }
         }
 
-        // currentNode
-        if(currentNode == nullptr)
+        std::function<void(shared_ptr<Tree>)> getNodes = [&](shared_ptr<Tree> root)
         {
-            cout << "NO solution found !!" << endl; 
-        }
+            if(root->parent == nullptr)
+                return; 
+            getNodes(root->parent);
+        };
 
-        // Traj best_traj;
-        
-        // State step(x);
-        // vector<Control> controls; 
-        // std::function<void(shared_ptr<Tree>)> getNodes = [&](shared_ptr<Tree> root)
-        // {
-        //     if(root == nullptr)
-        //         return; 
-        //     getNodes(root->parent);
-        //     double v = root->state.getV(); 
-        //     double y = root->state.getW();
-
-        //     printf("[size %d] v = %lf, w = %lf \n", controls.size(), v, y);
-        //     Control control{{v, y}};
-        //     step = motion(step, control, config.dt);
-        //     best_traj.emplace_back(step);
-        //     controls.emplace_back(control);
-        // };
-
+        getNodes(currentNode);
         double v = currentNode->state.getV(); 
         double y = currentNode->state.getW();
         Control control{{v, y}};
         u = control;
         Traj best_traj = calc_trajectory(x, v, y, config);
-        // getNodes(currentNode);
-        
-
         return best_traj; 
         
     }

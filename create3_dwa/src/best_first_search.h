@@ -45,32 +45,15 @@ public:
 };
 
 
-// Define a function to check if a state is the goal state
-inline bool isGoalState(const Node& state, double dw1) {
-    return state.getV() >= dw1; // Modify this condition for your specific problem
-}
-
 // Define a function to generate successor states
-
 inline vector<Node> generateSuccessors(double v, double start, double end, 
     double yawrate_reso) {
     vector<Node> successors;
-    // for (double y=start; y<=end; y+=yawrate_reso)
-    // {
-    //    Node node(v, y);
-    //    successors.emplace_back(node);
-    // }
-    // random sample 
-    std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<> dis(start, end + yawrate_reso);
-    for(int i = 0; i < 4; ++i)
+    for (double y=start; y<=end; y+=yawrate_reso)
     {
-        Node node(v, dis(gen));
-        successors.emplace_back(node);
+       Node node(v, y);
+       successors.emplace_back(node);
     }
-
-
     return successors;
 }
 
@@ -86,14 +69,6 @@ struct Tree {
     Tree(const Node& s, shared_ptr<Tree> p, double c, double h) : state(s), parent(move(p)), cost(c), heuristic(h) {}
 };
 
-// Define a function to calculate the heuristic cost (if applicable)
-
-inline double heuristic(const Tree& state) {
-    // Implement your heuristic function here (if applicable)
-    return 0; // Default to zero if no heuristic is used
-}
-
-
 // Define a custom comparison function for the priority queue
 struct CompareNodeCost {
     bool operator()(const shared_ptr<Tree>& left, const shared_ptr<Tree>& right) const {
@@ -102,29 +77,3 @@ struct CompareNodeCost {
     }
 };
 
-
-
-// int main() {
-//     State initialState(0); // Change the initial state based on your problem
-//     shared_ptr<Node> solution = bestFirstSearch(initialState);
-
-//     if (solution != nullptr) {
-//         // Trace back the solution path
-//         vector<State> solutionPath;
-//         shared_ptr<Node> currentNode = solution;
-//         while (currentNode != nullptr) {
-//             solutionPath.push_back(currentNode->state);
-//             currentNode = currentNode->parent;
-//         }
-
-//         cout << "Solution path:" << endl;
-//         for (int i = solutionPath.size() - 1; i >= 0; i--) {
-//             cout << solutionPath[i].value << " ";
-//         }
-//         cout << endl;
-//     } else {
-//         cout << "No solution found." << endl;
-//     }
-
-//     return 0;
-// }
